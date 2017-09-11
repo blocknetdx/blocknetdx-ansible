@@ -21,7 +21,7 @@
         image: "{{ image_id }}"
         group_id:
           - "{{ security_group }}"
-          - "sg-c3adabb3"
+          - "sg-custom_sg_id"       # you can add multiple custom sg's here
         region: "{{ region }}"
         user_data: |
           #!/bin/bash
