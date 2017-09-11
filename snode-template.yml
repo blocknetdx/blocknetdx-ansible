@@ -1,0 +1,58 @@
+---
+- name: Provision BlocknetDX v3.6.983 snode
+  tags: provision
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    key_name: <ssh_key>
+    instance_type: <instance_size>
+    image_id: "ami-cd0f5cb6" # us-east-1 ami, for other regions select correct ami (ubuntu 16.04)
+    security_group: <base_sg>
+    region: <region>
+
+  tasks:
+    - name: Provision EC2 instance
+      register: ec2
+      ec2:
+        key_name: "{{ key_name }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ image_id }}"
+        group_id:
+          - "{{ security_group }}"
+          - "sg-c3adabb3"
+        region: "{{ region }}"
+        user_data: |
+          #!/bin/bash
+          sudo apt-get update
+          sudo apt-get install python-minimal -y
+          sudo mkdir /root/.blocknetdx
+          sudo echo "server=1" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "listen=1" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "daemon=1" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "maxconnections=250" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "rpcpassword=<change_me>" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "rpcuser=<change_me>" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "servicenode=1" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "servicenodeaddr=<put_EIP_here:41412" >> /root/.blocknetdx/blocknetdx.conf
+          sudo echo "servicenodeprivkey=" >> /root/.blocknetdx/blocknetdx.conf
+          sudo mkdir /root/dx
+          sudo wget -P /root/dx/ https://github.com/BlocknetDX/BlockDX/releases/download/v3.6.983/blocknetdx-3.6.983-x86_64-linux-gnu.tar.gz
+          sudo tar -xvf /root/dx/blocknetdx-3.6.983-x86_64-linux-gnu.tar.gz -C /root/dx
+        wait: yes
+        exact_count: 1
+        count_tag:
+          Name: blocknetdx_snode
+        instance_tags:
+          Name: snode
+
+    - name: Attach Elastic IP
+      register: eip
+      ec2_eip:
+        instance_id: "{{ ec2.tagged_instances[0].id }}"
+        in_vpc: yes
+        region: "{{ region }}"
+        state: present
+      when: ec2.tagged_instances is defined
+
