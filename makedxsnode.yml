@@ -1,0 +1,82 @@
+---
+- name: Provision BlocknetDX snode
+  tags: provision
+  hosts: localhost
+  connection: local
+  vars:
+    deploy_version: "3.9.10"  # update with correct version
+    sprivkey: "{{ servicenodeprivkey }}"
+    key_name: id_rsa # update to correct key
+    instance_type: t2.micro # update to correct size for your deployment
+    image_id: "ami-cd0f5cb6" # update with correct AMI
+    security_group: sg-91284cef # update with correct SG
+    region: us-east-1 # update with correct region
+    become: yes
+    become_user: root
+
+  tasks:
+    - name: Provision EC2 instance
+      register: ec2
+      ec2:
+        key_name: "{{ key_name }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ image_id }}"
+        group_id:
+          - "{{ security_group }}"
+          - "sg-c3adabb3"  # for custom/existing groups, remove if not used
+        region: "{{ region }}"
+        user_data: |
+          #!/bin/bash
+          apt-get update
+          apt-get install python-minimal -y
+          mkdir /root/dx
+          wget -P /root/dx/ https://github.com/BlocknetDX/BlockDX/releases/download/v{{deploy_version}}/blocknetdx-{{deploy_version}}-x86_64-linux-gnu.tar.gz
+          tar -xvf /root/dx/blocknetdx-{{deploy_version}}-x86_64-linux-gnu.tar.gz -C /root/dx
+          wget -P /root/dx/ https://raw.githubusercontent.com/BlocknetDX/blocknet-docs/master/utils/awsconfgen.sh
+          mkdir /root/.blocknetdx
+          echo "servicenodeprivkey={{ sprivkey }}" >> /root/.blocknetdx/blocknetdx.conf
+          chmod +x /root/dx/awsconfgen.sh
+          sleep 2
+          /root/dx/awsconfgen.sh
+          echo "debug - awsconfgen finished"
+          # we have created a race condition with this deployment method
+          # since the EIP is assigned in the next step (but should have excecuted by the time we run the awsconfgen
+          # start the daemon
+          sleep 5
+          sudo /root/dx/blocknetdx-{{deploy_version}}/bin/blocknetdxd
+        wait: yes
+        exact_count: 1
+        count_tag:
+          Name: snodepublicip
+        instance_tags:
+          Name: snode
+
+    - name: Attach Elastic IP
+      register: eip
+      ec2_eip:
+        instance_id: "{{ ec2.tagged_instances[0].id }}"
+        in_vpc: yes
+        region: "{{ region }}"
+        state: present
+      when: ec2.tagged_instances is defined
+
+    - name: output the IP
+      debug:
+        msg: "Allocated IP inside a VPC is {{ eip.public_ip }}"
+
+    - add_host: hostname={{ eip.public_ip }} groupname="awssnodes,ec2hosts"
+      with_items: eip
+
+    - name: waitforssh
+      wait_for:
+        state=started
+        host={{ eip.public_ip }}
+        port=22
+      with_items: ec2.instances
+
+    - name: fixsshprints
+      shell: ssh-keyscan -H {{ eip.public_ip }} >> ~/.ssh/known_hosts
+
+    - name: log ip address
+      shell: echo "instance public ip {{ eip.public_ip }}" >> ~/ansible_latest.txt
+
