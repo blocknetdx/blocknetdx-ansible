@@ -4,7 +4,7 @@
   hosts: localhost
   connection: local
   vars:
-    deploy_version: "3.9.16"
+    deploy_version: "3.9.22"
     sprivkey: "{{ servicenodeprivkey }}"
     nodename: "{{ snodename }}"
     key_name: id_rsa
