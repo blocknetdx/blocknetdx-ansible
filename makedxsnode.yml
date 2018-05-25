@@ -4,13 +4,14 @@
   hosts: localhost
   connection: local
   vars:
-    deploy_version: "3.9.10"  # update with correct version
+    deploy_version: "3.9.16"
     sprivkey: "{{ servicenodeprivkey }}"
-    key_name: id_rsa # update to correct key
-    instance_type: t2.micro # update to correct size for your deployment
-    image_id: "ami-cd0f5cb6" # update with correct AMI
-    security_group: sg-91284cef # update with correct SG
-    region: us-east-1 # update with correct region
+    nodename: "{{ snodename }}"
+    key_name: id_rsa
+    instance_type: t2.micro
+    image_id: "ami-cd0f5cb6"
+    security_group: sg-91284cef
+    region: us-east-1
     become: yes
     become_user: root
 
@@ -23,7 +24,7 @@
         image: "{{ image_id }}"
         group_id:
           - "{{ security_group }}"
-          - "sg-c3adabb3"  # for custom/existing groups, remove if not used
+          - "sg-c3adabb3"
         region: "{{ region }}"
         user_data: |
           #!/bin/bash
@@ -49,7 +50,7 @@
         count_tag:
           Name: snodepublicip
         instance_tags:
-          Name: snode
+          Name: "{{ nodename }}"
 
     - name: Attach Elastic IP
       register: eip
@@ -78,5 +79,9 @@
       shell: ssh-keyscan -H {{ eip.public_ip }} >> ~/.ssh/known_hosts
 
     - name: log ip address
-      shell: echo "instance public ip {{ eip.public_ip }}" >> ~/ansible_latest.txt
+      shell: echo "instance public ip {{ eip.public_ip }}" >> ~/ansible/latest.txt
+
+    - name: save IP for script
+      shell: echo "instance public ip {{ eip.public_ip }}" > ~/ansible/currentip.txt
+
 
