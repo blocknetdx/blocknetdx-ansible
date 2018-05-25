@@ -79,9 +79,9 @@
       shell: ssh-keyscan -H {{ eip.public_ip }} >> ~/.ssh/known_hosts
 
     - name: log ip address
-      shell: echo "instance public ip {{ eip.public_ip }}" >> ~/ansible/latest.txt
+      shell: echo "instance public ip {{ eip.public_ip }}" >> ~/latest.txt
 
     - name: save IP for script
-      shell: echo "instance public ip {{ eip.public_ip }}" > ~/ansible/currentip.txt
+      shell: echo "instance public ip {{ eip.public_ip }}" > ~/currentip.txt
 
 
