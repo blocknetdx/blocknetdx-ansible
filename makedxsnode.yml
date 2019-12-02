@@ -4,11 +4,11 @@
   hosts: localhost
   connection: local
   vars:
-    deploy_version: "3.9.22"
+    deploy_version: "3.14.1"
     sprivkey: "{{ servicenodeprivkey }}"
     nodename: "{{ snodename }}"
     key_name: id_rsa
-    instance_type: t2.micro
+    instance_type: t3.small
     image_id: "ami-cd0f5cb6"
     security_group: sg-91284cef
     region: us-east-1
@@ -31,7 +31,7 @@
           apt-get update
           apt-get install python-minimal -y
           mkdir /root/dx
-          wget -P /root/dx/ https://github.com/BlocknetDX/BlockDX/releases/download/v{{deploy_version}}/blocknetdx-{{deploy_version}}-x86_64-linux-gnu.tar.gz
+          wget -P /root/dx/ https://github.com/blocknetdx/blocknet/releases/download/v{{deploy_version}}/blocknetdx-{{deploy_version}}-x86_64-linux-gnu.tar.gz
           tar -xvf /root/dx/blocknetdx-{{deploy_version}}-x86_64-linux-gnu.tar.gz -C /root/dx
           wget -P /root/dx/ https://raw.githubusercontent.com/BlocknetDX/blocknet-docs/master/utils/awsconfgen.sh
           mkdir /root/.blocknetdx

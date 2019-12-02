@@ -2,8 +2,8 @@
 # This script is still beta, please edit WALLETPATH to match your ENV
 #
 
-WALLETNAME=blocknetdx-cli
-WALLETPATH=/home/atcsecure/dx/blocknetdx-3.9.22/bin/
+WALLETNAME="blocknetdx-cli -datadir=/media/atcsecure/ssdchaindata/blocknetmain/"
+WALLETPATH=/home/atcsecure/dx/3140classic/blocknetdx-3.14.0/bin/
 mynodename=$1
 
 # create account using nodename
@@ -24,7 +24,7 @@ echo "new key ${mynewkey}"
 # Build snode via aws using ansible
 ansible-playbook -i ./hosts ./makedxsnode.yml -e "servicenodeprivkey=${mynewkey} snodename=${mynodename}"
 #load up ip 
-mynewip=$(head -n 1 ~/ansible/currentip.txt)
+mynewip=$(head -n 1 ~/currentip.txt)
 echo "currentip: ${mynewip}"
 echo "waiting..."
 sleep 90
